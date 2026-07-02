@@ -15,7 +15,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 
 class CustomEnsembleRetriever:
-    # mashing up keyword and vector math rankings together with standard rrf
+    # merge sparse + dense results using rrf sorting math
     def __init__(self, retrievers: list, weights: List[float]):
         self.retrievers = retrievers
         self.weights = weights
@@ -26,7 +26,7 @@ class CustomEnsembleRetriever:
         
         doc_scores = {}
         doc_map = {}
-        constant = 60 # rrf constant value
+        constant = 60 # standard rrf rank smoothing param
         
         for rank, doc in enumerate(bm25_docs):
             cid = doc.metadata.get("candidate_id")
@@ -52,7 +52,7 @@ def parse_date(date_str: str) -> datetime:
 
 
 def load_and_filter_candidates(filepath: str) -> List[Dict]:
-    # stream jsonl line by line to stop memory blowing up
+    # line by line reading to keep the colab ram footprint tiny
     survivors = []
     current_date = datetime(2026, 6, 29) 
     
@@ -64,13 +64,13 @@ def load_and_filter_candidates(filepath: str) -> List[Dict]:
             cand = json.loads(line)
             signals = cand.get("redrob_signals", {})
             
-            # boot anyone whos been afk for 6 months
+            # check if they have gone completely dark for half a year
             last_active = parse_date(signals.get("last_active_date", "2000-01-01"))
             days_inactive = (current_date - last_active).days
             if days_inactive > 180:
                 continue 
                 
-            # kick out if reply rate is garbage
+            # skip profile if they never respond to mesages
             response_rate = signals.get("recruiter_response_rate", 0)
             if response_rate < 0.10:
                 continue 
@@ -81,7 +81,7 @@ def load_and_filter_candidates(filepath: str) -> List[Dict]:
 
 
 def get_embeddings_model():
-    # checking directory path so colab and local weights both work
+    # checking local folders first so cloud execution dont break paths
     try:
         base_dir = Path(__file__).resolve().parent
     except NameError:
@@ -103,7 +103,7 @@ def get_embeddings_model():
 
 
 def build_hybrid_retriever(candidates: List[Dict], query: str) -> List[Document]:
-    # parse the text blobs out for indexing
+    # format dict payload into a clean string chunk for langchain
     all_docs = []
     for cand in candidates:
         profile = cand.get("profile", {})
@@ -120,22 +120,22 @@ def build_hybrid_retriever(candidates: List[Dict], query: str) -> List[Document]
                 
         all_docs.append(Document(page_content=content, metadata={"candidate_id": cand.get("candidate_id")}))
         
-    # changed this from 2000 to 1000 to avoid colab timeout error
+    # capping at 1000 candidates otherwise cpu dense embedding takes ages
     print(f"   Indexing {len(all_docs)} active profiles into primary BM25 pre-filter...")
     initial_bm25 = BM25Retriever.from_documents(all_docs)
     initial_bm25.k = min(1000, len(all_docs)) 
     narrowed_docs = initial_bm25.invoke(query)
     
-    # chromadb runs on smaller candidate pool now so its way faster
+    # building the mini vector store on the downsampled subset
     print("   Computing ChromaDB dense vector embeddings for top 1000 context matches...")
     embeddings = get_embeddings_model()
 
     vectorstore = Chroma.from_documents(narrowed_docs, embeddings)
     
-    # slashed k size to 150 to keep execution time under 5 min limit
-    chroma_retriever = vectorstore.as_retriever(search_kwargs={"k": 150})
+    # keeping search windows small to smash through the 5 min limit
+    chroma_retriever = vectorstore.as_retriever(search_kwargs={"k": 200})
     precise_bm25 = BM25Retriever.from_documents(narrowed_docs)
-    precise_bm25.k = 150
+    precise_bm25.k = 200
     
     ensemble_retriever = CustomEnsembleRetriever(
         retrievers=[precise_bm25, chroma_retriever], 
@@ -146,7 +146,7 @@ def build_hybrid_retriever(candidates: List[Dict], query: str) -> List[Document]
 
 
 def apply_signal_penalties(retrieved_docs: List[Document], original_candidates: List[Dict]) -> List[Dict]:
-    # adjust baseline index score with behavior penalty stats
+    # adjust the hybrid score using behavioral metrics multiplier
     cand_lookup = {c["candidate_id"]: c for c in original_candidates}
     scored_candidates = []
     max_base_score = len(retrieved_docs)
@@ -174,12 +174,12 @@ def apply_signal_penalties(retrieved_docs: List[Document], original_candidates: 
 
 
 def final_local_judge(top_candidates: List[Dict]) -> List[Dict]:
-    # weed out non-technical profiles doing keyword spaming
+    # filter out non tech keyword stuffers from the final list
     final_results = []
     
     TRAP_TITLES = [
         "marketing", "sales", "hr", "recruiter", "talent", "writer", 
-        "graphic", "designer", "mechanical", "support", "accountant", 
+        "g  raphic", "designer", "mechanical", "support", "accountant", 
         "executive", "business analyst"
     ]
     
@@ -191,7 +191,7 @@ def final_local_judge(top_candidates: List[Dict]) -> List[Dict]:
         
         base_score = cand["hybrid_score"]
         
-        # tank score completely if they are not an actual coder
+        # if title is a trap string drop score to zero unless they are actually an engineer
         if any(trap in title for trap in TRAP_TITLES) and "engineer" not in title and "developer" not in title:
             final_score = 0.0
             reasoning = f"Title trap detected: {profile.get('current_title')} is not an engineer."
@@ -205,7 +205,7 @@ def final_local_judge(top_candidates: List[Dict]) -> List[Dict]:
             "reasoning": reasoning
         })
         
-    # double sorting config to settle score ties consistently
+    # sequential stable sorting so tie breaks always match submission spec
     final_results.sort(key=lambda x: x["candidate_id"])
     final_results.sort(key=lambda x: x["score"], reverse=True)
     
@@ -215,7 +215,7 @@ def final_local_judge(top_candidates: List[Dict]) -> List[Dict]:
 def main():
     start_time = time.time()
     dataset_file = "candidates.jsonl"
-    output_csv = "team_ocean_enjoyers.csv"
+    output_csv = "ocean_enjoyers.csv"
     
     query = "Senior AI Engineer machine learning embeddings RAG fine-tuning python LLM pipelines"
     
