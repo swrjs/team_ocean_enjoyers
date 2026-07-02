@@ -12,10 +12,11 @@ Ensure you have Python installed, then install the pinned dependencies:
 
 ```bash
 pip install -r requirements.txt
+```
 
-## Execution
 
 To run the pipeline and generate the final submission file, use the following single command:
 
 ```bash
 python hybrid_ranker_pipeline.py --candidates ./candidates.jsonl --out ./ocean_enjoyers.csv
+```
