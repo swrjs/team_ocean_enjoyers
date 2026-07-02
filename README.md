@@ -1,10 +1,14 @@
-# Hybrid Ranker Pipeline — Team Ocean Enjoyers
+# 🌊Candidate Ranking Pipeline
+**Team Name:** ocean_enjoyers  
+**Track:** Redrob Idea Submission Challenge
 
-This repository contains our official rule-compliant submission for the LLM Ranking Hackathon. Our system utilizes a lightweight, high-performance hybrid retrieval and ranking architecture designed to execute 100% locally on standard CPU hardware well within the 5-minute compute limit.
+An optimized hybrid ranking engine that filters, retrieves, and scores candidates using BM25 keyword matching and ChromaDB/HuggingFace dense vector semantic search.
 
-## 🚀 Quick Start / Reproduction Command
+---
 
-To reproduce our final submission CSV from the raw candidates file in a single command, run:
+## 🛠️ Setup & Installation
+
+Ensure you have Python installed, then install the pinned dependencies:
 
 ```bash
-python hybrid_ranker_pipeline.py --candidates ./candidates.jsonl --out ./submission.csv
+pip install -r requirements.txt
