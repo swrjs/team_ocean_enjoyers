@@ -1,6 +1,6 @@
-# 🌊Redrob and AI Challenge
+# 🌊Redrob India Runs Track 01: The Data and AI challenge
 **Team Name:** ocean_enjoyers  
-**Track:** Redrob Idea Submission Challenge
+**Track:** Data and AI Challenge
 
 An optimized hybrid ranking engine that filters, retrieves, and scores candidates using BM25 keyword matching and ChromaDB/HuggingFace dense vector semantic search.
 
