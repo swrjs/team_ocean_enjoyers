@@ -1,4 +1,4 @@
-# 🌊Candidate Ranking Pipeline
+# 🌊Redrob and AI Challenge
 **Team Name:** ocean_enjoyers  
 **Track:** Redrob Idea Submission Challenge
 
