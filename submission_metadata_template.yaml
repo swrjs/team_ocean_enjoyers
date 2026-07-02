@@ -1,0 +1,83 @@
+# Redrob Hackathon — Submission Metadata Template
+
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "ocean_enjoyers"  
+
+primary_contact:
+  name: "Abhinav  Kumar"
+  email: "abhikumarchoudhary456@gmail.com"   
+  phone: "+91-6201839765"       
+
+team_members:
+  - name: "Swaraj Sinha"
+    email: "swarajsjimmy@gmail.com"
+  - name: "Abhinav Kumar"
+    email: "abhikumarchoudhary456@gmail.com"
+  - name: "Rishab Singh"
+    email: "rishab.singh0307@gmail.com" 
+  - name: "Swastik Srivastava 
+    email: "swastik2612@gmail.com"     
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/swrjs/team_ocean_enjoyers"
+
+
+sandbox_link: "https://colab.research.google.com/drive/1CceQ3BbXakIaVwXLeA0aKSvhDCBCbfQc"
+
+
+reproduce_command: "python hybrid_ranker_pipeline.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Lenovo LOQ"                    # Or: "AWS EC2 c5.4xlarge", "Local Linux box", etc.
+  cpu_cores: 8                                  # Number of CPU cores used
+  ram_gb: 24                                    # Available RAM in GB
+  python_version: "3.14.6"                      # python --version
+  os: "Windows 11"                              # Or "Ubuntu 22.04 LTS", etc.
+  uses_gpu_for_inference: false                 # Must be false — see compute constraints
+  has_network_during_ranking: false             # Must be false — no API calls during ranking
+  pre_computation_required: false               # true if you pre-compute embeddings or train models offline
+  pre_computation_time_minutes: 0               # Approximate, if applicable
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+ai_tools_used:
+  - "Claude"   
+  - "Gemini"    
+  
+
+ai_usage_summary: |
+  Briefly describe how AI tools were used. Examples:
+  - "Used Claude during the initial phase of the project to search methodologies, compare ranking algorithms, and plan out the 4-phase architecture."
+    "No candidate data was fed to any LLM."
+  - "Used Gemini to help format repository files, verify Python package versions for requirements.txt, and structure the submission markdown files according to rules"
+  - "No AI tools used."
+
+# ============================================================================
+# Approach summary (optional but recommended)
+# ============================================================================
+methodology_summary: |
+ Our pipeline utilizes a local-first, four-stage hybrid architecture optimized for CPU constraints.
+ Phase 1 profiles raw candidate streams to immediately filter out inactive records (>180 days) and non-responsive applications (<10% rate). 
+ Phase 2 executes semantic matching via a fast BM25 pre-filter coupled with a local 'all-MiniLM-L6-v2' Hugging Face text embedding space.
+ Phase 3 incorporates behavioral metadata multipliers using recruiter conversion rates.
+ Phase 4 runs an algorithmic verification judge to catch keyword-stuffer honeypots by heavily penalizing non-engineering profiles matching trap titles.
+ Execution completes globally roughly under 70 seconds.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true        
+  code_is_original_work: true      
+  no_collusion: true                
+  honeypot_check_done: true        
+  reproduction_tested: true         
